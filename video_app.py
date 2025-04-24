@@ -4,14 +4,6 @@ import requests
 from bs4 import BeautifulSoup
 import os
 import time
-import streamlit
-import pytubefix
-import bs4
-
-print("streamlit:", streamlit.__version__)
-print("pytubefix:", pytubefix.__version__)
-print("requests:", requests.__version__)
-print("beautifulsoup4:", bs4.__version__)
 
 # Page setup
 st.set_page_config(page_title="YouTube Downloader", layout="wide")
@@ -80,7 +72,7 @@ def scrape_youtube_video_details(video_url):
     except Exception as e:
         return {"error": str(e)}
 
-def download_youtube_video(video_url, audio_only=False, progress_callback=None):
+def download_youtube_video(video_url, audio_only=False, resolution="720p", progress_callback=None):
     try:
         start_time = time.time()
         downloaded_bytes = [0]
@@ -100,12 +92,12 @@ def download_youtube_video(video_url, audio_only=False, progress_callback=None):
             stream = yt.streams.filter(only_audio=True).order_by('abr').desc().first()
             file = stream.download(output_path="downloads/", filename_prefix="audio_")
         else:
-            video_stream = yt.streams.filter(file_extension='mp4', only_video=True).order_by('resolution').desc().first()
+            video_stream = yt.streams.filter(file_extension='mp4', resolution=resolution, progressive=False).first()
             audio_stream = yt.streams.filter(only_audio=True).order_by('abr').desc().first()
             video_file = video_stream.download(output_path="downloads/", filename_prefix="video_")
             audio_file = audio_stream.download(output_path="downloads/", filename_prefix="audio_")
             title = "".join(c for c in yt.title if c.isalnum() or c in (' ', '.', '_')).rstrip()
-            combined_file = f"downloads/{title}_combined.mp4"
+            combined_file = f"downloads/{title}_{resolution}_combined.mp4"
             os.system(f"ffmpeg -y -i \"{video_file}\" -i \"{audio_file}\" -c:v copy -c:a aac \"{combined_file}\"")
             os.remove(video_file)
             os.remove(audio_file)
@@ -124,6 +116,22 @@ file_size = None
 
 col1, col2 = st.columns(2)
 
+res_options = []
+yt_obj = None
+
+if "youtube.com/watch?v=" in url:
+    try:
+        yt_obj = YouTube(url)
+        res_options = sorted(
+    list(set([
+        stream.resolution for stream in yt_obj.streams.filter(progressive=False, file_extension="mp4") if stream.resolution
+    ])),
+    key=lambda x: int(x.replace('p', '')),
+    reverse=True
+)
+    except Exception as e:
+        st.warning(f"Could not fetch resolutions: {e}")
+
 with col1:
     if "youtube.com/watch?v=" in url:
         st.info("Fetching video metadata...")
@@ -141,6 +149,8 @@ with col1:
 
 with col2:
     download_type = st.radio("Choose download type", ["🎥 Video + Audio", "🎧 Audio Only"])
+    selected_resolution = st.selectbox("📺 Select Resolution (Video only)", res_options if res_options else ["720p"])
+
     if st.button("⬇️ Download"):
         if "youtube.com/watch?v=" not in url:
             st.error("❌ Invalid YouTube URL.")
@@ -159,7 +169,7 @@ with col2:
                 )
 
             is_audio = download_type == "🎧 Audio Only"
-            result, size = download_youtube_video(url, audio_only=is_audio, progress_callback=progress_callback)
+            result, size = download_youtube_video(url, audio_only=is_audio, resolution=selected_resolution, progress_callback=progress_callback)
 
             if "downloads/" in result:
                 st.success("✅ Download complete!")
