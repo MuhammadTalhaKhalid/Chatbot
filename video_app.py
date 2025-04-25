@@ -123,21 +123,35 @@ if "youtube.com/watch?v=" in url:
     try:
         yt_obj = YouTube(url)
         res_options = sorted(
+<<<<<<< HEAD
             list(set([
                 stream.resolution for stream in yt_obj.streams.filter(progressive=False, file_extension="mp4") if stream.resolution
             ])),
             key=lambda x: int(x.replace('p', '')),
             reverse=True
         )
+=======
+    list(set([
+        stream.resolution for stream in yt_obj.streams.filter(progressive=False, file_extension="mp4") if stream.resolution
+    ])),
+    key=lambda x: int(x.replace('p', '')),
+    reverse=True
+)
+>>>>>>> 595fe821571f93565385ee6e4d719893106b0610
     except Exception as e:
         st.warning(f"Could not fetch resolutions: {e}")
 
 with col1:
     if "youtube.com/watch?v=" in url:
+<<<<<<< HEAD
         fetch_info_box = st.empty()
         fetch_info_box.info("Fetching video metadata...")
         info = scrape_youtube_video_details(url)
         fetch_info_box.empty()
+=======
+        st.info("Fetching video metadata...")
+        info = scrape_youtube_video_details(url)
+>>>>>>> 595fe821571f93565385ee6e4d719893106b0610
         if "error" in info:
             st.error(info['error'])
         else:
@@ -157,8 +171,12 @@ with col2:
         if "youtube.com/watch?v=" not in url:
             st.error("❌ Invalid YouTube URL.")
         else:
+<<<<<<< HEAD
             download_info_box = st.empty()
             download_info_box.info("Downloading...")
+=======
+            st.info("Downloading...")
+>>>>>>> 595fe821571f93565385ee6e4d719893106b0610
             progress = st.progress(0)
             progress_text = st.empty()
 
@@ -174,10 +192,13 @@ with col2:
             is_audio = download_type == "🎧 Audio Only"
             result, size = download_youtube_video(url, audio_only=is_audio, resolution=selected_resolution, progress_callback=progress_callback)
 
+<<<<<<< HEAD
             download_info_box.empty()
             progress.empty()
             progress_text.empty()
 
+=======
+>>>>>>> 595fe821571f93565385ee6e4d719893106b0610
             if "downloads/" in result:
                 st.success("✅ Download complete!")
                 st.write(f"📁 File: `{result}`")
